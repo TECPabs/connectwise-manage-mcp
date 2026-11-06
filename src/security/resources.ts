@@ -170,6 +170,21 @@ const REFERENCE_FIELDS: FieldMap = {
   emailFlag: true,
   phoneFlag: true,
   faxFlag: true,
+  // Schedule calendars: the working hours for each day.
+  mondayStartTime: true,
+  mondayEndTime: true,
+  tuesdayStartTime: true,
+  tuesdayEndTime: true,
+  wednesdayStartTime: true,
+  wednesdayEndTime: true,
+  thursdayStartTime: true,
+  thursdayEndTime: true,
+  fridayStartTime: true,
+  fridayEndTime: true,
+  saturdayStartTime: true,
+  saturdayEndTime: true,
+  sundayStartTime: true,
+  sundayEndTime: true,
 };
 
 const CONFIGURATION_FIELDS: FieldMap = {

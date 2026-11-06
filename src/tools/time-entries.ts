@@ -580,4 +580,42 @@ export function registerTimeEntryTools(server: McpServer, client: CwManageClient
       };
     },
   );
+
+  server.tool(
+    "cw_list_work_types",
+    "List work types in ConnectWise Manage (used when creating or updating time entries).",
+    {
+      conditions: z.string().optional().describe("ConnectWise conditions query string"),
+      page: z.number().optional().describe("Page number (default: 1)"),
+      pageSize: z.number().optional().describe("Results per page (default: 25, max: 1000)"),
+    },
+    { readOnlyHint: true },
+    async ({ conditions, page, pageSize }) => {
+      const result = await client.get("/time/workTypes", {
+        conditions,
+        page: page ?? 1,
+        pageSize: pageSize ?? 25,
+      });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    "cw_list_work_roles",
+    "List work roles in ConnectWise Manage (used when creating or updating time entries).",
+    {
+      conditions: z.string().optional().describe("ConnectWise conditions query string"),
+      page: z.number().optional().describe("Page number (default: 1)"),
+      pageSize: z.number().optional().describe("Results per page (default: 25, max: 1000)"),
+    },
+    { readOnlyHint: true },
+    async ({ conditions, page, pageSize }) => {
+      const result = await client.get("/time/workRoles", {
+        conditions,
+        page: page ?? 1,
+        pageSize: pageSize ?? 25,
+      });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
 }

@@ -45,7 +45,7 @@ describe("ticket configuration tools", () => {
       properties: Record<string, unknown>;
     } }[] }>("tools/list", {});
     const tools = result.tools;
-    expect(tools).toHaveLength(84);
+    expect(tools).toHaveLength(96); // 84 upstream + 12 TEC tools (src/security/tec-tools.test.ts)
     const get = tools.find((tool) => tool.name === "cw_get_ticket_configurations")!;
     const update = tools.find((tool) => tool.name === "cw_update_ticket_configurations")!;
     expect(get.inputSchema.required).toEqual(["id"]);

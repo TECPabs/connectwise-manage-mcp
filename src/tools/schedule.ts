@@ -273,4 +273,57 @@ export function registerScheduleTools(server: McpServer, client: CwManageClient)
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     },
   );
+
+  server.tool(
+    "cw_delete_schedule_entry",
+    "Delete a schedule entry (Manage DELETE /schedule/entries/{id}), cancelling that dispatch or calendar appointment. This cannot be undone. To look an entry up first, use cw_search_schedule_entries with conditions \"id = <id>\".",
+    {
+      id: z.number().describe("Schedule entry ID"),
+    },
+    SCHEDULE_WRITE,
+    async ({ id }) => {
+      await client.delete(`/schedule/entries/${id}`);
+      return {
+        content: [{ type: "text", text: JSON.stringify({ id, deleted: true }, null, 2) }],
+      };
+    },
+  );
+
+  server.tool(
+    "cw_list_schedule_calendars",
+    "List schedule calendars (work-hour definitions) in ConnectWise Manage.",
+    {
+      conditions: z.string().optional().describe("ConnectWise conditions query string"),
+      page: z.number().optional().describe("Page number (default: 1)"),
+      pageSize: z.number().optional().describe("Results per page (default: 25, max: 1000)"),
+    },
+    SCHEDULE_READ_ONLY,
+    async ({ conditions, page, pageSize }) => {
+      const result = await client.get("/schedule/calendars", {
+        conditions,
+        page: page ?? 1,
+        pageSize: pageSize ?? 25,
+      });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    "cw_list_schedule_holidays",
+    "List company holidays from the schedule module in ConnectWise Manage.",
+    {
+      conditions: z.string().optional().describe("ConnectWise conditions query string"),
+      page: z.number().optional().describe("Page number (default: 1)"),
+      pageSize: z.number().optional().describe("Results per page (default: 25, max: 1000)"),
+    },
+    SCHEDULE_READ_ONLY,
+    async ({ conditions, page, pageSize }) => {
+      const result = await client.get("/schedule/holidays", {
+        conditions,
+        page: page ?? 1,
+        pageSize: pageSize ?? 25,
+      });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
 }

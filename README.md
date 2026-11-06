@@ -255,6 +255,27 @@ Two limits of the ConnectWise API are worth knowing before using these. There is
 - **Notes.** A ticket note emails only when `processNotifications` is true on the note **and** the matching ticket Automatic Email flag is on. `cw_add_ticket_note` sets `processNotifications` when you pass `emailContactFlag`, `emailResourceFlag`, or `emailCcFlag` as true, unless you set `processNotifications` yourself. Those flag names are never posted on the note itself.
 - **No per-note recipients.** The ConnectWise note API can't take recipients or CC addresses for an individual note. To change who gets a note's email, change the ticket's Automatic Email flags and `automaticEmailCc` (for example with `cw_update_ticket`) before adding the note.
 
+### TEC additions
+
+This branch (`TEC`) adds 12 tools to the upstream set, for 96 in total. They are kept in one list here so upstream changes to the sections above merge cleanly.
+
+- `cw_get_ticket_tasks` — Get the tasks (checklist items) on a service ticket
+- `cw_create_ticket_task` — Add a task to a service ticket
+- `cw_update_ticket_task` — Update a task on a service ticket (JSON Patch, e.g. mark it complete)
+- `cw_update_project_ticket` — Update a project ticket (JSON Patch, e.g. a status change). Project tickets use service board statuses: find valid IDs with `cw_list_statuses` and the ticket's board ID.
+- `cw_delete_schedule_entry` — Delete a schedule entry. To look one up by ID first, use `cw_search_schedule_entries` with `conditions: "id = <id>"`.
+- `cw_list_schedule_calendars` — List schedule calendars (work-hour definitions)
+- `cw_list_schedule_holidays` — List company holidays
+- `cw_list_board_types` — List ticket types for a board
+- `cw_list_board_subtypes` — List ticket subtypes for a board
+- `cw_list_board_items` — List ticket items (third-level classification) for a board
+- `cw_list_work_types` — List work types (reference data for time entries)
+- `cw_list_work_roles` — List work roles (reference data for time entries)
+
+The four that write (`cw_create_ticket_task`, `cw_update_ticket_task`, `cw_update_project_ticket`, `cw_delete_schedule_entry`) follow the [access policy](#access-policy) like every other write tool: they are unavailable until named in `CW_MANAGE_WRITE_TOOLS`.
+
+**Custom fields such as a Pay Code** need no extra tool. Create the time entry with `cw_create_time_entry`, then set the field with `cw_update_time_entry`, replacing path `customFields` with the full array, e.g. `[{ "id": 19, "value": "Regular" }]`. To read custom fields back, set `CW_MANAGE_EXTRA_FIELDS=timeEntry.customFields`.
+
 ## Usage
 
 ### With Claude Desktop

@@ -290,4 +290,57 @@ export function registerTicketTools(server: McpServer, client: CwManageClient) {
       }
     },
   );
+
+  server.tool(
+    "cw_get_ticket_tasks",
+    "Get all tasks/checklist items on a service ticket.",
+    {
+      id: z.number().describe("Ticket ID"),
+      page: z.number().optional().describe("Page number (default: 1)"),
+      pageSize: z.number().optional().describe("Results per page (default: 25, max: 1000)"),
+    },
+    async ({ id, page, pageSize }) => {
+      const result = await client.get(`/service/tickets/${id}/tasks`, {
+        page: page ?? 1,
+        pageSize: pageSize ?? 25,
+      });
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    "cw_create_ticket_task",
+    "Add a task/checklist item to a service ticket.",
+    {
+      id: z.number().describe("Ticket ID"),
+      notes: z.string().describe("Task description/notes"),
+      priority: z.number().optional().describe("Task priority/sort order"),
+      closedFlag: z.boolean().optional().describe("Mark task as completed (default: false)"),
+    },
+    async ({ id, notes, priority, closedFlag }) => {
+      const body: Record<string, unknown> = { notes };
+      if (priority !== undefined) body.priority = priority;
+      if (closedFlag !== undefined) body.closedFlag = closedFlag;
+      const result = await client.post(`/service/tickets/${id}/tasks`, body);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    "cw_update_ticket_task",
+    "Update a task/checklist item on a service ticket using JSON Patch operations. Use cw_get_ticket_tasks first to retrieve task IDs.",
+    {
+      ticketId: z.number().describe("Ticket ID"),
+      taskId: z.number().describe("Task ID (from cw_get_ticket_tasks)"),
+      operations: z.array(z.object({
+        op: z.enum(["replace", "add", "remove"]).describe("Patch operation"),
+        path: z.string().describe("JSON path (e.g. 'closedFlag', 'notes', 'priority')"),
+        value: z.unknown().optional().describe("New value"),
+      })).describe("Array of JSON Patch operations"),
+    },
+    async ({ ticketId, taskId, operations }) => {
+      const result = await client.patch(`/service/tickets/${ticketId}/tasks/${taskId}`, operations);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
 }

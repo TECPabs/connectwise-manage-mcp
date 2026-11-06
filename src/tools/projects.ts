@@ -74,6 +74,27 @@ export function registerProjectTools(server: McpServer, client: CwManageClient) 
   );
 
   server.tool(
+    "cw_update_project_ticket",
+    "Update an existing project ticket using JSON Patch operations. Project tickets use service board statuses — find valid status IDs with cw_list_statuses using the ticket's board ID.",
+    {
+      id: z.number().describe("Project ticket ID"),
+      operations: z
+        .array(
+          z.object({
+            op: z.enum(["replace", "add", "remove"]).describe("Patch operation"),
+            path: z.string().describe("JSON path (e.g. 'status/id', 'summary')"),
+            value: z.unknown().optional().describe("New value"),
+          }),
+        )
+        .describe("Array of JSON Patch operations"),
+    },
+    async ({ id, operations }) => {
+      const result = await client.patch(`/project/tickets/${id}`, operations);
+      return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
     "cw_get_project_ticket_notes",
     "Get all notes on a project ticket, including notes from any child tickets.",
     {

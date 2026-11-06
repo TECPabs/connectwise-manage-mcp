@@ -46,7 +46,9 @@ export const WRITE_TOOLS: ReadonlySet<string> = new Set([
   "cw_create_project",
   "cw_create_schedule_entry",
   "cw_create_ticket",
+  "cw_create_ticket_task",
   "cw_create_time_entry",
+  "cw_delete_schedule_entry",
   "cw_delete_time_entry",
   "cw_update_agreement_addition",
   "cw_update_catalog_item",
@@ -54,9 +56,11 @@ export const WRITE_TOOLS: ReadonlySet<string> = new Set([
   "cw_update_contact",
   "cw_update_contact_types",
   "cw_update_invoice",
+  "cw_update_project_ticket",
   "cw_update_schedule_entry",
   "cw_update_ticket",
   "cw_update_ticket_configurations",
+  "cw_update_ticket_task",
   "cw_update_time_entry",
 ]);
 
