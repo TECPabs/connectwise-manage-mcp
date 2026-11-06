@@ -230,6 +230,26 @@ describe("field allowlist", () => {
     expect(result).toEqual({ id: 1, summary: "New" });
   });
 
+  it("returns the agreement recap rollup with the field names ConnectWise uses", async () => {
+    const { client } = clientFor();
+    const recap = {
+      id: 9,
+      name: "Managed Services 2026",
+      agreementStatus: "ACTIVE",
+      companyName: "Acme",
+      startingAmount: 100,
+      usedAmount: 40,
+      remainingAmount: 60,
+      availableAmount: 60,
+      overrunAmount: 0,
+      unbilledPeriods: 1,
+      lastInvoiceAmount: 500,
+      nextInvoiceAmount: 500,
+    };
+    handler = () => [{ ...recap, customFields: [{ value: "x" }] }];
+    await expect(client.get("/finance/agreementrecap/")).resolves.toEqual([recap]);
+  });
+
   it("returns nothing for a response that is not a record", async () => {
     const { client } = clientFor();
     handler = () => "plain text from upstream";
@@ -394,7 +414,13 @@ describe("company scope", () => {
   it("makes record types that carry no customer unavailable, and leaves reference data alone", async () => {
     const { client } = clientFor(SCOPE);
     handler = () => [{ id: 1, name: "Service" }];
-    for (const path of ["/schedule/entries", "/schedule/entries/5", "/procurement/purchaseorders"]) {
+    for (const path of [
+      "/schedule/entries",
+      "/schedule/entries/5",
+      "/procurement/purchaseorders",
+      "/finance/agreementrecap/",
+      "/finance/agreementrecap/9",
+    ]) {
       await expect(client.get(path)).rejects.toThrow(/unavailable while a company restriction is active/);
     }
     expect(calls).toEqual([]);
