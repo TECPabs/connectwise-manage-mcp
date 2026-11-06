@@ -47,6 +47,24 @@ For deploying to **Azure Container Apps** with Entra ID OAuth 2.1, see [AZURE_AC
 
 `/health` stays unauthenticated and does not read ConnectWise credentials. The stdio transport does not use `CONDUIT_S2S_SECRET`.
 
+### Access policy
+
+These limits are enforced by the server itself, in [`src/security/`](src/security/). They do not depend on tool descriptions or on instructions given to the AI, and the defaults are the restrictive ones: **a server started with none of these set is read-only.**
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `CW_MANAGE_WRITE_TOOLS` | *(none: read-only)* | Comma-separated write tools to enable (e.g. `cw_add_ticket_note,cw_create_time_entry`), or `*` for all. A write tool that is not listed is not registered, so it is absent from the tool list and cannot be called. Independently of that, the API client refuses any `POST`, `PATCH` or `DELETE` that is not made from inside an enabled write tool. |
+| `CW_MANAGE_DISABLED_TOOLS` | *(none)* | Comma-separated tools, read or write, that are never registered (e.g. `cw_search_invoices,cw_get_invoice`). |
+| `CW_MANAGE_ALLOWED_COMPANY_IDS` | *(unset: no restriction)* | Comma-separated ConnectWise company record IDs. When set, it is enforced on searches, on direct record-ID lookups, on sub-resources (notes, additions, forecasts, ticket configurations) and on writes. A record outside the list is reported exactly like one that does not exist. Schedule entries and purchase orders carry no customer and are unavailable while a restriction is active. Setting it to an empty value is an error, not "everything". |
+| `CW_MANAGE_INCLUDE_INTERNAL_NOTES` | `false` | Internal notes are dropped from ticket and project-ticket notes unless this is `true`. |
+| `CW_MANAGE_EXTRA_FIELDS` | *(none)* | Additions to the response field allowlist, as `resource.field` (e.g. `timeEntry.customFields`). Credential fields can never be added. |
+
+**Field allowlist.** Every response (searches, single records, sub-resources and the record a write returns) is reduced to an explicit allowlist per record type, defined in [`src/security/resources.ts`](src/security/resources.ts). Not returned unless you add them: custom fields, internal notes and analysis, configuration question answers and network details, and member (employee) contact, rate and cost data. An API path that is not in that file is refused.
+
+**Startup.** An invalid policy value (an unknown tool name, a non-numeric company ID, an empty company list) stops the server from starting; on Cloudflare Workers it disables `/mcp` with a 503. The active policy is logged in one line at startup.
+
+**Least privilege at the source.** Use a dedicated ConnectWise API member whose security role grants only what the enabled tools need. The settings above are a second layer, not a substitute.
+
 ### HTTP authentication
 
 With `MCP_TRANSPORT=http` and `CONDUIT_S2S_SECRET` set, every `/mcp` request must include `X-Gateway-S2S`. The header value is:

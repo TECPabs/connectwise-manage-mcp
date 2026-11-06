@@ -39,6 +39,7 @@ import {
   buildConfig,
   type CwManageConfig,
 } from "./mcp-server.js";
+import { loadAccessPolicy, type AccessPolicy } from "./security/policy.js";
 
 export interface Env {
   CW_MANAGE_COMPANY_ID?: string;
@@ -50,6 +51,12 @@ export interface Env {
   LOG_LEVEL?: string;
   /** Required in env mode when CW_MANAGE_* secrets are set. */
   MCP_BEARER_TOKEN?: string;
+  /** Access policy (see src/security/policy.ts). Unset = read-only. */
+  CW_MANAGE_WRITE_TOOLS?: string;
+  CW_MANAGE_DISABLED_TOOLS?: string;
+  CW_MANAGE_ALLOWED_COMPANY_IDS?: string;
+  CW_MANAGE_INCLUDE_INTERNAL_NOTES?: string;
+  CW_MANAGE_EXTRA_FIELDS?: string;
 }
 
 /** Constant-time string compare (no early exit on the first differing byte). */
@@ -176,8 +183,30 @@ export default {
         configOverride = config;
       }
 
+      // Access policy comes from Worker vars (the bindings win over anything
+      // already in process.env). An invalid policy disables /mcp rather than
+      // falling back to an unrestricted server.
+      let policy: AccessPolicy;
+      try {
+        policy = loadAccessPolicy({
+          ...(typeof process !== "undefined" ? process.env : {}),
+          ...(env as Record<string, string | undefined>),
+        });
+      } catch (err) {
+        console.error(
+          `[policy] ${err instanceof Error ? err.message : "invalid access policy"}`,
+        );
+        return json(
+          {
+            error: "Not configured",
+            message: "This Worker's access policy is invalid, so /mcp is disabled.",
+          },
+          503,
+        );
+      }
+
       // Fresh server + transport per request (stateless).
-      const server = createMcpServer(configOverride);
+      const server = createMcpServer(configOverride, policy);
       const transport = new WebStandardStreamableHTTPServerTransport({
         sessionIdGenerator: undefined,
         enableJsonResponse: true,

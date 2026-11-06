@@ -64,6 +64,7 @@ import {
 } from "./mcp-server.js";
 import { verifyS2sHeader, S2S_HEADER } from "./s2s-verify.js";
 import { isValidHostHeader, parseRequestTarget } from "./request-target.js";
+import { describePolicy, loadAccessPolicy } from "./security/policy.js";
 
 /**
  * Public example values. A copied placeholder must not verify as a real
@@ -480,6 +481,16 @@ async function main(): Promise<void> {
   setupShutdownHandlers();
 
   const transportType = process.env.MCP_TRANSPORT || "stdio";
+
+  // Fail closed on an invalid access policy before any transport starts.
+  try {
+    console.error(describePolicy(loadAccessPolicy()));
+  } catch (err) {
+    console.error(
+      `Refusing to start: ${err instanceof Error ? err.message : "invalid access policy"}`,
+    );
+    process.exit(1);
+  }
 
   if (transportType === "http") {
     await startHttpTransport();

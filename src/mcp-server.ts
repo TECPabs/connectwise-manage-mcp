@@ -34,6 +34,9 @@ import { registerHealthTools } from "./tools/health.js";
 import { registerAgreementTools } from "./tools/agreements.js";
 import { registerOpportunityTools } from "./tools/opportunities.js";
 import { registerFinanceProcurementTools } from "./tools/finance-procurement.js";
+import { loadAccessPolicy, type AccessPolicy } from "./security/policy.js";
+import { GuardedCwManageClient } from "./security/guarded-client.js";
+import { applyToolPolicy } from "./security/tool-policy.js";
 
 export type { CwManageConfig };
 
@@ -101,8 +104,14 @@ export function resolveGatewayConfig(
  *
  * @param configOverride - Optional config (gateway mode / Workers headers).
  *   When provided, the client is built from it instead of reading process.env.
+ * @param policy - Access policy (write tools, company scope, field allowlist).
+ *   Defaults to the CW_MANAGE_* policy variables in process.env; an invalid
+ *   policy throws, so a misconfigured server never serves a request.
  */
-export function createMcpServer(configOverride?: CwManageConfig): McpServer {
+export function createMcpServer(
+  configOverride?: CwManageConfig,
+  policy: AccessPolicy = loadAccessPolicy(),
+): McpServer {
   const server = new McpServer(
     {
       name: "connectwise-manage-mcp",
@@ -158,7 +167,10 @@ export function createMcpServer(configOverride?: CwManageConfig): McpServer {
     return server;
   }
 
-  const client = new CwManageClient(config);
+  // Access policy, enforced in code: disabled tools are never registered, and
+  // the tools only ever get the guarded client (see src/security/).
+  applyToolPolicy(server, policy);
+  const client: CwManageClient = new GuardedCwManageClient(config, policy);
 
   registerTicketTools(server, client);
   registerCompanyTools(server, client);

@@ -12,5 +12,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     exclude: ["**/node_modules/**", "**/dist/**"],
+    // Upstream tool tests need write tools enabled; see the file for why.
+    setupFiles: ["src/security/test-env.ts"],
   },
 });
