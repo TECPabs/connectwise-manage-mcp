@@ -135,6 +135,50 @@ describe("tool calls", () => {
   });
 });
 
+describe("ticket card (MCP Apps)", () => {
+  const ticket = {
+    id: 1,
+    summary: "Printer offline",
+    status: { id: 2, name: "In Progress" },
+    company: { id: 10, name: "Acme" },
+    customFields: [{ id: 19, caption: "Pay Code", value: "hidden-custom-value" }],
+    initialInternalAnalysis: "hidden-internal-analysis",
+  };
+  const notes = [
+    { id: 1, text: "Replaced the toner", detailDescriptionFlag: true, customFields: [{ value: "hidden-custom-value" }] },
+    { id: 2, text: "hidden-internal-note", internalAnalysisFlag: true },
+  ];
+
+  function serve() {
+    fetchMock.mockImplementation(async (input: string) => {
+      const path = new URL(input).pathname;
+      return new Response(JSON.stringify(path.endsWith("/notes") ? notes : ticket), { status: 200 });
+    });
+  }
+
+  it("is built only from filtered data: no custom fields and no internal notes", async () => {
+    serve();
+    const client = await connect();
+    const result = await client.callTool({ name: "cw_get_ticket", arguments: { id: 1 } });
+    const everything = JSON.stringify(result);
+    expect(everything).toContain("Printer offline");
+    expect(everything).toContain("Replaced the toner");
+    for (const hidden of ["hidden-custom-value", "hidden-internal-analysis", "hidden-internal-note", "customFields"]) {
+      expect(everything).not.toContain(hidden);
+    }
+  });
+
+  it("is not produced for a ticket outside the approved companies", async () => {
+    serve();
+    const client = await connect({ CW_MANAGE_ALLOWED_COMPANY_IDS: "77" });
+    const result = await client.callTool({ name: "cw_get_ticket", arguments: { id: 1 } });
+    const everything = JSON.stringify(result);
+    expect((result as { isError?: boolean }).isError).toBe(true);
+    expect(everything).not.toContain("Printer offline");
+    expect(everything).not.toContain("Replaced the toner");
+  });
+});
+
 describe("Cloudflare Worker entry point", () => {
   const headers = {
     Accept: "application/json, text/event-stream",
